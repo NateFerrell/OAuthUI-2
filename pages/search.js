@@ -994,7 +994,8 @@ export default function Search() {
             height: 180px;
           }
         }
-      `}</style>
+      `}
+      </style>
     </div>
   );
 }
