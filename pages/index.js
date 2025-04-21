@@ -52,7 +52,7 @@ export default function Home() {
     const authUrl = `https://accounts.stockx.com/authorize?` +
       `response_type=code&` +
       `client_id=KlbEZjymb9OBap9a3jWlX9bIx4j4y3ks&` +
-      `redirect_uri=https://cache-o-auth2-portal.vercel.app/callback&` +
+      `redirect_uri=https://o-auth-ui-2.vercel.app/callback&` +
       `scope=offline_access openid&` +
       `audience=gateway.stockx.com&` +
       `state=${state}`;

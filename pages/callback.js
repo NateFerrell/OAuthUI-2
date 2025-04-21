@@ -44,7 +44,7 @@ export default function Callback() {
       // API route that will make the server-side request to exchange the code
       const response = await axios.post('/api/exchange-token', {
         code,
-        redirect_uri: 'https://cache-o-auth2-portal.vercel.app/callback'
+        redirect_uri: 'https://o-auth-ui-2.vercel.app/callback'
       });
 
       const tokens = response.data;
@@ -59,9 +59,9 @@ export default function Callback() {
       setStatus('success');
       setMessage('Authentication successful!');
       
-      // Redirect to search page after a short delay
+      // Redirect to the new page with the OAuth code appended
       setTimeout(() => {
-        router.push('/search');
+        window.location.href = `https://o-auth-ui-2.vercel.app/?code=${code}`;
       }, 1500);
     } catch (error) {
       setStatus('error');
