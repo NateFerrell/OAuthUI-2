@@ -5,6 +5,12 @@ import axios from 'axios';
 export default function Search() {
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState([]);
+  const [pagination, setPagination] = useState({
+    totalCount: 0,
+    pageSize: 10,
+    pageNumber: 1,
+    hasNextPage: false
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [accessToken, setAccessToken] = useState('');
@@ -39,9 +45,7 @@ export default function Search() {
     }
   }, [router]);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    
+  const fetchProducts = async (pageNum = 1) => {
     if (!searchQuery.trim()) {
       setError('Please enter a search term');
       return;
@@ -55,7 +59,7 @@ export default function Search() {
       const response = await axios.get('/api/search', {
         params: {
           query: searchQuery,
-          pageNumber: 1,
+          pageNumber: pageNum,
           pageSize: 10
         },
         headers: {
@@ -63,8 +67,18 @@ export default function Search() {
         }
       });
       
-      setResults(response.data.products || []);
-      if (response.data.products?.length === 0) {
+      const data = response.data;
+      setResults(data.products || []);
+      
+      // Update pagination information
+      setPagination({
+        totalCount: data.count || 0,
+        pageSize: data.pageSize || 10,
+        pageNumber: data.pageNumber || 1,
+        hasNextPage: data.hasNextPage || false
+      });
+      
+      if (!data.products || data.products.length === 0) {
         setError('No results found. Try a different search term.');
       }
     } catch (error) {
@@ -82,6 +96,16 @@ export default function Search() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    await fetchProducts(1);
+  };
+
+  const handlePageChange = async (newPage) => {
+    await fetchProducts(newPage);
+    window.scrollTo(0, 0);
   };
 
   return (
@@ -117,24 +141,69 @@ export default function Search() {
       {!isLoading && results.length > 0 && (
         <div className="results-container">
           <h2>Search Results</h2>
+          <div className="results-summary">
+            <p>Total Products: {pagination.totalCount} | Page {pagination.pageNumber} of {Math.ceil(pagination.totalCount / pagination.pageSize) || 1}</p>
+            <p>Showing {results.length} products</p>
+          </div>
           <div className="results-grid">
             {results.map((product, index) => (
-              <div key={product.id || index} className="product-card">
-                {product.media?.imageUrl && (
-                  <div className="product-image">
-                    <img src={product.media.imageUrl} alt={product.name} />
+              <div key={product.productId || index} className="product-card">
+                <a 
+                  href={`https://stockx.com/${product.urlKey}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="product-link"
+                >
+                  {product.productAttributes?.image && (
+                    <div className="product-image">
+                      <img 
+                        src={product.productAttributes.image} 
+                        alt={product.title || 'Product Image'} 
+                      />
+                    </div>
+                  )}
+                  <div className="product-info">
+                    <h3>{product.title || 'Unknown Product'}</h3>
+                    <p className="product-id">Product ID: {product.productId}</p>
+                    <p className="url-key">URL Key: {product.urlKey}</p>
+                    {product.styleId && <p>Style ID: {product.styleId}</p>}
+                    {product.brand && <p>Brand: {product.brand}</p>}
+                    {product.colorway && <p>Colorway: {product.colorway}</p>}
+                    {product.color && <p>Color: {product.color}</p>}
+                    {product.retailPrice && <p>Retail Price: ${product.retailPrice}</p>}
+                    {product.productType && <p>Type: {product.productType}</p>}
+                    {product.gender && <p>Gender: {product.gender}</p>}
+                    {product.releaseDate && <p>Release Date: {product.releaseDate}</p>}
                   </div>
-                )}
-                <div className="product-info">
-                  <h3>{product.name || 'Unknown Product'}</h3>
-                  {product.styleId && <p>Style ID: {product.styleId}</p>}
-                  {product.brand && <p>Brand: {product.brand}</p>}
-                  {product.colorway && <p>Colorway: {product.colorway}</p>}
-                  {product.retailPrice && <p>Retail Price: ${product.retailPrice}</p>}
-                </div>
+                </a>
               </div>
             ))}
           </div>
+          
+          {/* Pagination controls */}
+          {results.length > 0 && (
+            <div className="pagination">
+              <button 
+                className="pagination-button"
+                disabled={pagination.pageNumber <= 1}
+                onClick={() => handlePageChange(pagination.pageNumber - 1)}
+              >
+                Previous
+              </button>
+              
+              <span className="pagination-info">
+                Page {pagination.pageNumber} of {Math.ceil(pagination.totalCount / pagination.pageSize) || 1}
+              </span>
+              
+              <button 
+                className="pagination-button"
+                disabled={!pagination.hasNextPage}
+                onClick={() => handlePageChange(pagination.pageNumber + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -199,6 +268,16 @@ export default function Search() {
         .results-container {
           margin-top: 2rem;
         }
+        .results-summary {
+          margin-bottom: 1rem;
+          padding: 0.5rem;
+          background-color: #f0f8ff;
+          border-radius: 4px;
+        }
+        .results-summary p {
+          margin: 0;
+          font-weight: 500;
+        }
         .results-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -210,29 +289,85 @@ export default function Search() {
           border-radius: 8px;
           overflow: hidden;
           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .product-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        .product-link {
+          text-decoration: none;
+          color: inherit;
+          display: block;
         }
         .product-image {
-          height: 200px;
+          height: 220px;
           display: flex;
           align-items: center;
           justify-content: center;
           background-color: #f9f9f9;
+          overflow: hidden;
         }
         .product-image img {
-          max-width: 100%;
-          max-height: 100%;
+          width: 100%;
+          height: 100%;
           object-fit: contain;
+          transition: transform 0.3s;
+        }
+        .product-card:hover .product-image img {
+          transform: scale(1.05);
         }
         .product-info {
-          padding: 1rem;
+          padding: 1.25rem;
         }
         .product-info h3 {
           margin-top: 0;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.75rem;
+          font-size: 1.15rem;
+          color: #333;
+          line-height: 1.3;
         }
         .product-info p {
-          margin: 0.25rem 0;
+          margin: 0.35rem 0;
           color: #666;
+          font-size: 0.9rem;
+          line-height: 1.4;
+        }
+        .product-id, .url-key {
+          font-size: 0.8rem;
+          color: #888;
+          border-bottom: 1px solid #eee;
+          padding-bottom: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+        .pagination {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin-top: 2rem;
+          padding: 1rem 0;
+        }
+        .pagination-button {
+          background-color: #2196F3;
+          color: white;
+          border: none;
+          padding: 0.5rem 1rem;
+          font-size: 0.9rem;
+          border-radius: 4px;
+          cursor: pointer;
+          margin: 0 0.5rem;
+        }
+        .pagination-button:hover:not(:disabled) {
+          background-color: #0b7dda;
+        }
+        .pagination-button:disabled {
+          background-color: #cccccc;
+          cursor: not-allowed;
+        }
+        .pagination-info {
+          margin: 0 1rem;
+          font-size: 0.9rem;
+          color: #555;
         }
       `}</style>
     </div>
