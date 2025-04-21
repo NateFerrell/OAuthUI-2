@@ -1,0 +1,496 @@
+/* Container and general styles */
+.container {
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Header */
+.title {
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+.headerActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+.cartButton {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.cartButton:hover {
+  background-color: #45a049;
+}
+
+/* Search Form */
+.searchForm {
+  display: flex;
+  margin: 1.5rem 0;
+  max-width: 600px;
+}
+.searchInput {
+  flex: 1;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px 0 0 4px;
+}
+.searchButton {
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+}
+.searchButton:hover {
+  background-color: #0b7dda;
+}
+.searchButton:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Main Content Layout */
+.mainContent {
+  display: flex;
+  position: relative;
+}
+.resultsArea {
+  flex: 1;
+  transition: width 0.3s;
+}
+.withSidebar {
+  width: calc(100% - 350px);
+}
+
+/* Error and Loading */
+.errorMessage {
+  color: #F44336;
+  margin: 1rem 0;
+}
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 2rem 0;
+}
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid #2196F3;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Results Container */
+.resultsContainer {
+  margin-top: 1rem;
+}
+.resultsSummary {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: #f0f8ff;
+  border-radius: 4px;
+}
+.resultsSummary p {
+  margin: 0;
+  font-weight: 500;
+}
+.resultsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+/* Product Cards */
+.productCard {
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.productCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+.productContent {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.productImage {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f9f9f9;
+  overflow: hidden;
+}
+.productImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s;
+}
+.productCard:hover .productImage img {
+  transform: scale(1.05);
+}
+.productInfo {
+  padding: 1.25rem;
+  flex: 1;
+}
+.productInfo h3 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1.15rem;
+  color: #333;
+  line-height: 1.3;
+}
+.productInfo p {
+  margin: 0.35rem 0;
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.productId {
+  font-size: 0.8rem;
+  color: #888;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.productActions {
+  padding: 1rem;
+  background-color: #f9f9f9;
+  border-top: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.selectButton {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 0.6rem;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.selectButton:hover {
+  background-color: #45a049;
+}
+.viewLink {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  color: #2196F3;
+  font-size: 0.9rem;
+}
+.viewLink:hover {
+  text-decoration: underline;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2rem;
+  padding: 1rem 0;
+}
+.paginationButton {
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0 0.5rem;
+}
+.paginationButton:hover:not([disabled]) {
+  background-color: #0b7dda;
+}
+.paginationButton[disabled] {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+.paginationInfo {
+  margin: 0 1rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* Cart Sidebar */
+.cartSidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 350px;
+  height: 100vh;
+  background-color: white;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  padding: 1rem;
+  overflow-y: auto;
+}
+.cartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 1rem;
+}
+.cartHeader h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+.emptyCart {
+  text-align: center;
+  color: #999;
+  margin: 2rem 0;
+}
+.cartItems {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+.cartItem {
+  display: flex;
+  border-bottom: 1px solid #eee;
+  padding: 1rem 0;
+  position: relative;
+}
+.cartItemImage {
+  width: 70px;
+  height: 70px;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+.cartItemImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.cartItemDetails {
+  flex: 1;
+}
+.cartItemDetails h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+}
+.cartItemDetails p {
+  margin: 0.2rem 0;
+  font-size: 0.85rem;
+  color: #666;
+}
+.removeButton {
+  background: none;
+  border: none;
+  color: #F44336;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.3rem;
+  position: absolute;
+  right: 0;
+  bottom: 0.5rem;
+}
+.removeButton:hover {
+  text-decoration: underline;
+}
+.cartSummary {
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+.cartTotal, .cartValue {
+  font-weight: 500;
+  margin: 0.5rem 0;
+}
+.cartValue {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+.submitButton {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 0.8rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.2s;
+}
+.submitButton:hover {
+  background-color: #45a049;
+}
+
+/* Product Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 200;
+}
+.productModal {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+}
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+.modalContent {
+  padding: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+}
+.modalProductInfo {
+  display: flex;
+  margin-bottom: 1.5rem;
+}
+.modalProductImage {
+  width: 120px;
+  height: 120px;
+  margin-right: 1.5rem;
+  flex-shrink: 0;
+}
+.modalProductImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.modalProductDetails {
+  flex: 1;
+}
+.modalProductDetails p {
+  margin: 0.4rem 0;
+  font-size: 0.9rem;
+}
+.consignmentForm {
+  margin-top: 1rem;
+  border-top: 1px solid #eee;
+  padding-top: 1.5rem;
+}
+.formGroup {
+  margin-bottom: 1.2rem;
+}
+.formGroup label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 500;
+}
+.formGroup select, .formGroup input {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+.formSummary {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+  font-weight: 500;
+}
+.modalFooter {
+  padding: 1rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+.cancelButton {
+  background-color: #eee;
+  color: #333;
+  border: none;
+  padding: 0.7rem 1.2rem;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.cancelButton:hover {
+  background-color: #ddd;
+}
+.addButton {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 0.7rem 1.2rem;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.addButton:hover {
+  background-color: #45a049;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .withSidebar {
+    width: 100%;
+  }
+  .cartSidebar {
+    width: 100%;
+  }
+  .modalProductInfo {
+    flex-direction: column;
+  }
+  .modalProductImage {
+    margin-right: 0;
+    margin-bottom: 1rem;
+    width: 100%;
+    height: 180px;
+  }
+}

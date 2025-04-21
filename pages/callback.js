@@ -24,44 +24,33 @@ export default function Callback() {
       return;
     }
 
-    // Verify state parameter
-    const savedState = localStorage.getItem('oauth-state');
-    if (state !== savedState) {
+    if (!state) {
       setStatus('error');
-      setMessage('Security verification failed. State parameter mismatch.');
+      setMessage('No state parameter received.');
       return;
     }
 
-    // Exchange code for tokens
-    exchangeCodeForTokens(code);
+    // Exchange code for tokens on the server
+    exchangeCodeForTokens(code, state);
   }, [router.isReady, router.query]);
 
-  const exchangeCodeForTokens = async (code) => {
+  const exchangeCodeForTokens = async (code, state) => {
     try {
       setStatus('exchanging');
       setMessage('Exchanging authorization code for tokens...');
 
-      // API route that will make the server-side request to exchange the code
-      const response = await axios.post('/api/exchange-token', {
+      // Call the server-side API route to handle token exchange
+      await axios.post('/api/auth/callback', {
         code,
-        redirect_uri: 'https://o-auth-ui-2.vercel.app/callback'
+        state
       });
-
-      const tokens = response.data;
-      
-      // Save tokens to localStorage
-      localStorage.setItem('oauth-tokens', JSON.stringify({
-        ...tokens,
-        obtained_at: Date.now(),
-        expires_at: Date.now() + (tokens.expires_in * 1000)
-      }));
 
       setStatus('success');
       setMessage('Authentication successful!');
       
-      // Redirect to the new page with the OAuth code appended
+      // Redirect to home page after a short delay
       setTimeout(() => {
-        window.location.href = `https://o-auth-ui-2.vercel.app/?code=${code}`;
+        router.push('/');
       }, 1500);
     } catch (error) {
       setStatus('error');

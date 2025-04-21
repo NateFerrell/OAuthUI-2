@@ -1,14 +1,50 @@
-# StockX OAuth Portal
+# StockX Consignment Portal with Server-Side Authentication
 
-A Next.js application for StockX OAuth authentication and product search.
+A Next.js application for StockX OAuth authentication and consignment inventory management, featuring server-side authentication and automatic data loading.
 
 ## Features
 
-- OAuth 2.0 authentication with StockX
-- Token validity checking (green/red status indicator)
-- Automatic token refresh when expired
-- Product search interface
-- Ready for Vercel deployment
+- **Server-Side Authentication**
+  - OAuth tokens managed on the server
+  - Background token refresh
+  - No client-side token handling required
+  - API proxy to use server-side tokens
+
+- **Auto-Loading Data**
+  - Trending products loaded automatically
+  - No manual search required on initial load
+  - Seamless user experience
+
+- **Consignment Management**
+  - Add products with specific sizes, quantities, and prices
+  - Review and edit consignment items
+  - Submit consignment inventory
+
+- **Responsive Design**
+  - Works on all device sizes
+  - Clean, intuitive UI
+
+## Architecture
+
+```
+┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
+│                 │         │                 │         │                 │
+│  Client         │         │  Server         │         │  StockX API     │
+│  (Next.js)      │ ───────▶│  (Node.js)      │ ───────▶│                 │
+│                 │         │                 │         │                 │
+└─────────────────┘         └─────────────────┘         └─────────────────┘
+       ▲                          │
+       │                          │
+       └──────────────────────────┘
+                API Proxy
+```
+
+## Implementation Details
+
+- **Token Manager**: Server-side service for managing OAuth tokens
+- **API Proxy**: Routes that use server tokens to call StockX APIs
+- **Caching Layer**: In-memory cache for API responses
+- **Background Refresh**: Scheduled job to refresh tokens before expiration
 
 ## Development
 
@@ -16,29 +52,53 @@ A Next.js application for StockX OAuth authentication and product search.
 # Install dependencies
 npm install
 
-# Run development server
+# Run development server (client-side only)
 npm run dev
+
+# Run custom server with token management
+npm run start:custom
 ```
 
-## Deployment to Vercel
+## Deployment Options
 
-1. Push your code to a Git repository
-2. Import the project in Vercel
-3. Deploy
+### Vercel Deployment
 
-## How It Works
+```bash
+# Build the application
+npm run build
 
-1. When you visit the site, it checks if you have a valid StockX token (less than 4 hours old)
-2. If valid (green checkmark), you're redirected to the search page
-3. If invalid (red checkmark), you'll need to authenticate with StockX
-4. After successful authentication, you can search for products
+# Deploy to Vercel
+vercel
+```
+
+### Cloudflare Deployment
+
+```bash
+# Install Cloudflare Wrangler
+npm install -g wrangler
+
+# Configure Cloudflare KV namespace
+wrangler kv:namespace create TOKEN_STORE
+# Update wrangler.toml with your KV namespace ID
+
+# Deploy to Cloudflare Pages
+wrangler pages publish .next
+```
+
+## Roadmap
+
+1. Server-Side Authentication (Complete)
+2. Auto-Loading UI (Complete)
+3. Enhanced Consignment Features (In Progress)
+4. Cloudflare Integration (Planned)
+5. Advanced Analytics (Planned)
 
 ## Environment Variables
 
-The application uses client ID and secret directly in the code for simplicity. For production, consider moving these values to environment variables:
+For production deployment, use environment variables:
 
 ```
-NEXT_PUBLIC_STOCKX_CLIENT_ID=your_client_id
+STOCKX_CLIENT_ID=your_client_id
 STOCKX_CLIENT_SECRET=your_client_secret
-NEXT_PUBLIC_REDIRECT_URI=your_redirect_uri
+REDIRECT_URI=your_redirect_uri
 ```

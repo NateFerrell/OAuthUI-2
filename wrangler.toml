@@ -1,0 +1,36 @@
+# Cloudflare Pages configuration
+name = "stockx-consignment-portal"
+compatibility_date = "2023-10-30"
+workers_dev = true
+
+# Bind a KV namespace for token storage
+kv_namespaces = [
+  { binding = "TOKEN_STORE", id = "YOUR_KV_NAMESPACE_ID" }
+]
+
+# Build settings
+[build]
+command = "npm run build"
+output_dir = ".next"
+
+# Environment variables
+[vars]
+NODE_ENV = "production"
+
+# Set up cron triggers for background token refresh
+[triggers]
+crons = ["*/10 * * * *"] # Run every 10 minutes
+
+# Set up routes
+[[routes]]
+pattern = "/*"
+script = "index.js"
+
+# Preview environments
+[env.preview]
+workers_dev = true
+
+# Production environment
+[env.production]
+workers_dev = false
+route = "consignment.example.com/*"

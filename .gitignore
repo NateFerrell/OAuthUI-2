@@ -34,3 +34,7 @@ yarn-error.log*
 # tokens
 oauth-tokens.json
 oauth-state.json
+
+# Cloudflare
+.wrangler/
+.env
