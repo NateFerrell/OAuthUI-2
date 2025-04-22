@@ -3,14 +3,14 @@ import { getTokenStatus } from '../../../server/tokenManager';
 /**
  * API route to check the token status
  */
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     // Get the token status
-    const status = getTokenStatus();
+    const status = await getTokenStatus();
     
     // Return the status
     return res.status(200).json(status);

@@ -5,13 +5,16 @@ workers_dev = true
 
 # Bind a KV namespace for token storage
 kv_namespaces = [
-  { binding = "TOKEN_STORE", id = "YOUR_KV_NAMESPACE_ID" }
+  { binding = "TOKEN_STORE", id = "4ada3e43a5194e89a246f1c368ced458" }
 ]
 
 # Build settings
 [build]
 command = "npm run build"
-output_dir = ".next"
+output_dir = "out"
+
+# Pages configuration
+pages_build_output_dir = "out"
 
 # Environment variables
 [vars]
@@ -34,3 +37,5 @@ workers_dev = true
 [env.production]
 workers_dev = false
 route = "consignment.example.com/*"
+
+
