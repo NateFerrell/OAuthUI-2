@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockX API with Persistent Authentication</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f7;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+      color: #00a046;
+      margin-top: 0;
+    }
+    
+    .section {
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    button {
+      background-color: #00a046;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    
+    button:hover {
+      background-color: #008a3c;
+    }
+    
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .status-card {
+      background-color: #f5f9ff;
+      border-left: 4px solid #00a046;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    
+    .error {
+      color: #e53935;
+      background-color: #ffebee;
+      padding: 15px;
+      border-radius: 4px;
+      border-left: 4px solid #e53935;
+      margin: 20px 0;
+    }
+    
+    .success {
+      color: #2e7d32;
+      background-color: #e8f5e9;
+      padding: 15px;
+      border-radius: 4px;
+      border-left: 4px solid #2e7d32;
+      margin: 20px 0;
+    }
+    
+    pre {
+      background-color: #f5f5f7;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 14px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #00a046;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .api-form {
+      margin-top: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    
+    .result-container {
+      margin-top: 20px;
+    }
+    
+    .info-box {
+      background-color: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>StockX API with Persistent Authentication</h1>
+    
+    <div class="info-box">
+      <h3>How This Works</h3>
+      <p>This system combines a CLI setup process with a persistent server:</p>
+      <ol>
+        <li>Initial authentication is done via command line for easy setup</li>
+        <li>Tokens are stored securely and refreshed automatically</li>
+        <li>The server provides ongoing API access with no downtime</li>
+        <li>No need to reauthenticate when tokens expire</li>
+      </ol>
+    </div>
+    
+    <div class="section">
+      <h2>Authentication Status</h2>
+      <p>Check the current state of your StockX authentication:</p>
+      <button id="checkStatusBtn">Check Status</button>
+      <div id="statusContainer"></div>
+    </div>
+    
+    <div class="section">
+      <h2>API Access</h2>
+      <p>Make authenticated API calls to StockX:</p>
+      
+      <div class="api-form">
+        <div class="form-group">
+          <label for="endpoint">API Endpoint:</label>
+          <select id="endpoint">
+            <option value="v2/catalog/search?query=nike+dunk&pageSize=5">Search Products</option>
+            <option value="v2/catalog/product/nike-dunk-low-grey-fog">Product Details</option>
+            <option value="v2/users/currentuser">Current User</option>
+          </select>
+        </div>
+        
+        <button id="testApiBtn">Make API Call</button>
+      </div>
+      
+      <div class="result-container">
+        <div id="apiResultContainer"></div>
+      </div>
+    </div>
+    
+    <div class="section">
+      <h2>Token Management</h2>
+      <p>Manage your authentication tokens:</p>
+      <button id="clearTokensBtn">Clear Tokens</button>
+      <span id="clearResult"></span>
+    </div>
+  </div>
+
+  <script>
+    // DOM elements
+    const checkStatusBtn = document.getElementById('checkStatusBtn');
+    const testApiBtn = document.getElementById('testApiBtn');
+    const clearTokensBtn = document.getElementById('clearTokensBtn');
+    const statusContainer = document.getElementById('statusContainer');
+    const apiResultContainer = document.getElementById('apiResultContainer');
+    const clearResult = document.getElementById('clearResult');
+    const endpointSelect = document.getElementById('endpoint');
+    
+    // Check authentication status
+    async function checkStatus() {
+      checkStatusBtn.disabled = true;
+      statusContainer.innerHTML = '<div class="loader"></div> Checking status...';
+      
+      try {
+        const response = await fetch('/api/auth/status');
+        const status = await response.json();
+        
+        let statusHtml = '<div class="status-card">';
+        
+        if (status.authenticated) {
+          statusHtml += `<h3>Authentication Status: ${status.valid ? '✅ Valid' : '❌ Expired'}</h3>`;
+          
+          if (status.valid) {
+            statusHtml += `<p>Token expires in: ${formatTime(status.expires_in_seconds)}</p>`;
+            statusHtml += `<p>Next automatic refresh in: ${formatTime(status.next_refresh_in_seconds)}</p>`;
+          }
+          
+          statusHtml += `
+            <p>Refresh token: ${status.refresh_token_available ? 'Available' : 'Missing'}</p>
+            <p>Token obtained at: ${formatDate(status.obtained_at)}</p>
+            <p>Refresh count: ${status.refresh_count}</p>
+          `;
+        } else {
+          statusHtml += `
+            <h3>Authentication Status: Not Authenticated</h3>
+            <p>You need to authenticate with StockX to get access tokens.</p>
+            <p>This is typically done via the command-line interface.</p>
+          `;
+        }
+        
+        statusHtml += '</div>';
+        statusContainer.innerHTML = statusHtml;
+      } catch (error) {
+        console.error('Error checking status:', error);
+        statusContainer.innerHTML = `<div class="error">Failed to check status: ${error.message}</div>`;
+      } finally {
+        checkStatusBtn.disabled = false;
+      }
+    }
+    
+    // Test API access
+    async function testApi() {
+      testApiBtn.disabled = true;
+      apiResultContainer.innerHTML = '<div class="loader"></div> Making API call...';
+      
+      try {
+        const endpoint = endpointSelect.value;
+        const response = await fetch(`/api/stockx/${endpoint}`);
+        
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        apiResultContainer.innerHTML = `
+          <div class="success">
+            <h3>API Call Successful</h3>
+            <p>Endpoint: ${endpoint}</p>
+          </div>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+        `;
+      } catch (error) {
+        console.error('API call error:', error);
+        apiResultContainer.innerHTML = `<div class="error">API call failed: ${error.message}</div>`;
+      } finally {
+        testApiBtn.disabled = false;
+      }
+    }
+    
+    // Clear tokens
+    async function clearTokens() {
+      clearTokensBtn.disabled = true;
+      clearResult.innerHTML = '<div class="loader"></div> Clearing tokens...';
+      
+      try {
+        const response = await fetch('/api/auth/clear', { method: 'POST' });
+        const result = await response.json();
+        
+        if (result.success) {
+          clearResult.innerHTML = '<span class="success">Tokens cleared successfully!</span>';
+          setTimeout(() => checkStatus(), 500);
+        } else {
+          throw new Error('Failed to clear tokens');
+        }
+      } catch (error) {
+        console.error('Error clearing tokens:', error);
+        clearResult.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+      } finally {
+        clearTokensBtn.disabled = false;
+      }
+    }
+    
+    // Helper function to format time
+    function formatTime(seconds) {
+      if (!seconds) return 'Unknown';
+      
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const remainingSeconds = seconds % 60;
+      
+      let result = '';
+      if (hours > 0) result += `${hours}h `;
+      if (minutes > 0 || hours > 0) result += `${minutes}m `;
+      result += `${remainingSeconds}s`;
+      
+      return result;
+    }
+    
+    // Helper function to format date
+    function formatDate(timestamp) {
+      if (!timestamp) return 'Unknown';
+      
+      return new Date(timestamp).toLocaleString();
+    }
+    
+    // Add event listeners
+    checkStatusBtn.addEventListener('click', checkStatus);
+    testApiBtn.addEventListener('click', testApi);
+    clearTokensBtn.addEventListener('click', clearTokens);
+    
+    // Check status on page load
+    document.addEventListener('DOMContentLoaded', checkStatus);
+  </script>
+</body>
+</html>

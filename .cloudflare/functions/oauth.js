@@ -2,93 +2,24 @@
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
-  const path = url.pathname;
-  
-  console.log("OAuth handler received request:", {
-    path: path,
-    method: request.method,
-    headers: Object.fromEntries([...request.headers.entries()].map(([k, v]) => [k, v]))
-  });
-  
-  // Add CORS headers to all responses
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400"
-  };
-  
-  // Handle preflight requests
-  if (request.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders
-    });
-  }
-  
-  // Extract the endpoint from various path patterns
-  let endpoint;
-  if (path.endsWith('/init')) {
-    endpoint = 'init';
-  } else if (path.endsWith('/callback')) {
-    endpoint = 'callback';
-  } else if (path.endsWith('/status')) {
-    endpoint = 'status';
-  } else if (path.endsWith('/test')) {
-    endpoint = 'test';
-  } else {
-    endpoint = path.split('/').pop();
-  }
-  
-  console.log("Resolved endpoint:", endpoint);
+  const path = url.pathname.split('/').pop();
 
-  // Determine which handler to use based on the endpoint
-  try {
-    switch (endpoint) {
-      case 'init':
-        return addCorsHeaders(await handleInit(request, env), corsHeaders);
-      case 'callback':
-        return addCorsHeaders(await handleCallback(request, env), corsHeaders);
-      case 'status':
-        return addCorsHeaders(await handleStatus(request, env), corsHeaders);
-      case 'test':
-        return addCorsHeaders(await handleTestRequest(request, env), corsHeaders);
-      default:
-        return addCorsHeaders(new Response(JSON.stringify({ 
-          error: 'Not found',
-          path: path,
-          endpoint: endpoint
-        }), {
-          status: 404,
-          headers: { 'Content-Type': 'application/json' }
-        }), corsHeaders);
-    }
-  } catch (error) {
-    console.error("Error in OAuth handler:", error);
-    return addCorsHeaders(new Response(JSON.stringify({ 
-      error: 'Server Error',
-      message: error.message,
-      stack: error.stack
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    }), corsHeaders);
+  // Determine which handler to use based on the path
+  switch (path) {
+    case 'init':
+      return handleInit(request, env);
+    case 'callback':
+      return handleCallback(request, env);
+    case 'status':
+      return handleStatus(request, env);
+    case 'test':
+      return handleTestRequest(request, env);
+    default:
+      return new Response(JSON.stringify({ error: 'Not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
   }
-}
-
-// Helper to add CORS headers to any response
-function addCorsHeaders(response, corsHeaders) {
-  const newHeaders = new Headers(response.headers);
-  
-  Object.entries(corsHeaders).forEach(([key, value]) => {
-    newHeaders.set(key, value);
-  });
-  
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: newHeaders
-  });
 }
 
 // StockX OAuth credentials
@@ -103,66 +34,33 @@ function getCredentials(env) {
 // Initialize OAuth flow
 async function handleInit(request, env) {
   try {
-    console.log("Starting OAuth initialization...");
-    
     // Generate a random state parameter for security
     const state = crypto.randomUUID();
-    console.log("Generated state:", state);
     
     // Get credentials
     const credentials = getCredentials(env);
-    console.log("Using credentials:", {
-      client_id: credentials.client_id,
-      redirect_uri: credentials.redirect_uri
-    });
     
     // Build the authorization URL
     const authUrl = `https://accounts.stockx.com/authorize?` +
       `response_type=code&` +
-      `client_id=${encodeURIComponent(credentials.client_id)}&` +
-      `redirect_uri=${encodeURIComponent(credentials.redirect_uri)}&` +
-      `scope=${encodeURIComponent('offline_access openid')}&` +
-      `audience=${encodeURIComponent('gateway.stockx.com')}&` +
-      `state=${encodeURIComponent(state)}`;
-    
-    console.log("Generated auth URL:", authUrl);
+      `client_id=${credentials.client_id}&` +
+      `redirect_uri=${credentials.redirect_uri}&` +
+      `scope=offline_access openid&` +
+      `audience=gateway.stockx.com&` +
+      `state=${state}`;
     
     // Set the state parameter in a cookie for verification
     const headers = new Headers();
-    headers.set('Content-Type', 'application/json');
-    headers.set('Set-Cookie', `oauth-state=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=1800`);
+    headers.append('Content-Type', 'application/json');
+    headers.append('Set-Cookie', `oauth-state=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=1800`);
     
-    // Store state in KV as a backup verification method
-    try {
-      await env.TOKEN_STORE.put(`state:${state}`, JSON.stringify({
-        created: Date.now(),
-        expires: Date.now() + (30 * 60 * 1000) // 30 minutes
-      }));
-      console.log("State stored in KV");
-    } catch (kvError) {
-      console.error("Error storing state in KV:", kvError);
-      // Continue anyway since we're using cookies as the primary method
-    }
-    
-    const response = {
-      authUrl,
-      state,
-      timestamp: Date.now()
-    };
-    
-    console.log("Returning response:", response);
-    
-    return new Response(JSON.stringify(response), {
+    return new Response(JSON.stringify({ authUrl }), {
       status: 200,
       headers
     });
   } catch (error) {
     console.error('Error initializing OAuth flow:', error);
-    return new Response(JSON.stringify({ 
-      error: 'Failed to initialize OAuth flow',
-      message: error.message,
-      stack: error.stack
-    }), {
+    return new Response(JSON.stringify({ error: 'Failed to initialize OAuth flow' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });

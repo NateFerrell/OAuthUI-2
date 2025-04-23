@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockX OAuth - Direct Auth with Refresh Token</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    h1, h2, h3 {
+      color: #2c3e50;
+    }
+    .container {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 2rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    textarea {
+      min-height: 100px;
+    }
+    button {
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    button.secondary {
+      background-color: #6c757d;
+    }
+    button.secondary:hover {
+      background-color: #5a6268;
+    }
+    button.success {
+      background-color: #28a745;
+    }
+    button.success:hover {
+      background-color: #218838;
+    }
+    button.warning {
+      background-color: #ffc107;
+      color: #212529;
+    }
+    button.warning:hover {
+      background-color: #e0a800;
+    }
+    .result {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .info {
+      background-color: #cce5ff;
+      color: #004085;
+      border: 1px solid #b8daff;
+    }
+    .token-details {
+      font-family: monospace;
+      background-color: #f1f1f1;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .note {
+      background-color: #e8f4fd;
+      padding: 1rem;
+      border-left: 4px solid #0066cc;
+      margin: 1rem 0;
+    }
+    code {
+      background-color: #f1f1f1;
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    .hidden {
+      display: none;
+    }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      background-color: #e8f5e9;
+    }
+    .status-icon {
+      font-size: 1.5rem;
+      margin-right: 1rem;
+    }
+    .status-text {
+      flex-grow: 1;
+    }
+    .status-bar.authenticated {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+    .status-bar.unauthenticated {
+      background-color: #fff3e0;
+      color: #e65100;
+    }
+    .status-bar.error {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+    .debug-log {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 0.5rem;
+      margin-top: 1rem;
+      font-family: monospace;
+      font-size: 0.875rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .debug-log-entry {
+      margin: 0.25rem 0;
+      padding: 0.25rem;
+      border-bottom: 1px solid #eee;
+    }
+    .debug-log-time {
+      color: #6c757d;
+      margin-right: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>StockX OAuth - Direct Auth with Refresh Token</h1>
+  
+  <div class="container">
+    <div id="status-container" class="status-bar unauthenticated">
+      <div id="status-icon" class="status-icon">⚠️</div>
+      <div id="status-text" class="status-text">Not authenticated with StockX</div>
+    </div>
+    
+    <div id="auth-section">
+      <h2>Authentication</h2>
+      <div class="note">
+        <p><strong>How this works:</strong> This page handles the complete OAuth flow with StockX, including refresh tokens. Click "Start Authentication" to begin the process. After authenticating, you'll return to this page with full token details.</p>
+      </div>
+      
+      <div id="auth-actions" class="actions">
+        <button id="start-auth-btn" class="success">Start Authentication</button>
+        <button id="show-token-btn" class="secondary">Show Token Details</button>
+        <button id="clear-token-btn" class="secondary">Clear Tokens</button>
+      </div>
+      
+      <div id="token-details" class="token-details hidden"></div>
+    </div>
+    
+    <div id="refresh-section" class="hidden">
+      <h2>Token Refresh</h2>
+      
+      <div class="note">
+        <p>Test the refresh token functionality. This will use your refresh token to get a new access token.</p>
+      </div>
+      
+      <div class="actions">
+        <button id="refresh-token-btn" class="warning">Refresh Token</button>
+        <button id="verify-token-btn">Verify Token</button>
+      </div>
+      
+      <div id="refresh-result" class="result hidden"></div>
+    </div>
+    
+    <div id="api-section" class="hidden">
+      <h2>API Test</h2>
+      
+      <div class="form-group">
+        <label for="search-query">Search Query:</label>
+        <input type="text" id="search-query" value="jordan" placeholder="Enter search term...">
+      </div>
+      
+      <div class="actions">
+        <button id="search-btn">Search StockX</button>
+      </div>
+      
+      <div id="search-result" class="result hidden"></div>
+    </div>
+    
+    <div id="debug-log-container">
+      <h3>Debug Log</h3>
+      <div id="debug-log" class="debug-log"></div>
+    </div>
+  </div>
+  
+  <script>
+    // Debug logger
+    const debugLog = {
+      container: document.getElementById('debug-log'),
+      log: function(message) {
+        console.log(message);
+        const entry = document.createElement('div');
+        entry.className = 'debug-log-entry';
+        
+        const time = document.createElement('span');
+        time.className = 'debug-log-time';
+        time.textContent = new Date().toLocaleTimeString();
+        
+        entry.appendChild(time);
+        entry.appendChild(document.createTextNode(message));
+        
+        this.container.appendChild(entry);
+        this.container.scrollTop = this.container.scrollHeight;
+      }
+    };
+    
+    // OAuth configuration
+    const config = {
+      clientId: 'KlbEZjymb9OBap9a3jWlX9bIx4j4y3ks',
+      clientSecret: 'y2GqspIoDSgzoryXS3Ue--5i0xlXQUU09F4cqnuVgn6Szk4efqZy1qGip_EVqmqe',
+      redirectUri: window.location.href.split('?')[0], // Current page without query params
+      authDomain: 'accounts.stockx.com',
+      scope: 'offline_access openid email',
+      audience: 'gateway.stockx.com',
+      apiKey: 'OEgPz70FHNL5AxwwK8fJ92Uyk18knTDOdTBxPmi0'
+    };
+    
+    // DOM elements
+    const statusContainer = document.getElementById('status-container');
+    const statusIcon = document.getElementById('status-icon');
+    const statusText = document.getElementById('status-text');
+    const startAuthBtn = document.getElementById('start-auth-btn');
+    const showTokenBtn = document.getElementById('show-token-btn');
+    const clearTokenBtn = document.getElementById('clear-token-btn');
+    const tokenDetails = document.getElementById('token-details');
+    const refreshSection = document.getElementById('refresh-section');
+    const refreshTokenBtn = document.getElementById('refresh-token-btn');
+    const verifyTokenBtn = document.getElementById('verify-token-btn');
+    const refreshResult = document.getElementById('refresh-result');
+    const apiSection = document.getElementById('api-section');
+    const searchQueryInput = document.getElementById('search-query');
+    const searchBtn = document.getElementById('search-btn');
+    const searchResult = document.getElementById('search-result');
+    
+    // Global token store
+    let tokens = null;
+    
+    // Initialize the application
+    function init() {
+      // Set up event handlers
+      startAuthBtn.addEventListener('click', startAuth);
+      showTokenBtn.addEventListener('click', toggleTokenDetails);
+      clearTokenBtn.addEventListener('click', clearTokens);
+      refreshTokenBtn.addEventListener('click', refreshToken);
+      verifyTokenBtn.addEventListener('click', verifyToken);
+      searchBtn.addEventListener('click', searchStockX);
+      
+      // Check for OAuth callback code
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+      const error = urlParams.get('error');
+      
+      // Process callback if present
+      if (code) {
+        // Remove code from URL to prevent issues with refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+        processCallback(code, state);
+      } else if (error) {
+        // Handle error in callback
+        showError(`Authentication error: ${error}`);
+      } else {
+        // Check for existing tokens
+        loadTokens();
+      }
+      
+      debugLog.log('Application initialized');
+    }
+    
+    // Load tokens from local storage
+    function loadTokens() {
+      const storedTokens = localStorage.getItem('stockx_tokens');
+      if (storedTokens) {
+        try {
+          tokens = JSON.parse(storedTokens);
+          debugLog.log('Loaded tokens from local storage');
+          
+          // Check token validity
+          if (tokens.expires_at && Date.now() < tokens.expires_at) {
+            updateStatus('authenticated', '✅', 'Authenticated with StockX');
+            showRefreshAndApiSections();
+          } else if (tokens.refresh_token) {
+            updateStatus('unauthenticated', '🔄', 'Token expired, needs refresh');
+            showRefreshAndApiSections();
+          } else {
+            updateStatus('unauthenticated', '⚠️', 'Token expired, no refresh token');
+          }
+        } catch (error) {
+          debugLog.log(`Error loading tokens: ${error.message}`);
+          clearTokens();
+        }
+      } else {
+        debugLog.log('No tokens found in local storage');
+      }
+    }
+    
+    // Update status display
+    function updateStatus(status, icon, text) {
+      statusContainer.className = `status-bar ${status}`;
+      statusIcon.textContent = icon;
+      statusText.textContent = text;
+    }
+    
+    // Show refresh and API sections
+    function showRefreshAndApiSections() {
+      refreshSection.classList.remove('hidden');
+      apiSection.classList.remove('hidden');
+    }
+    
+    // Start the OAuth flow
+    function startAuth() {
+      debugLog.log('Starting OAuth flow');
+      
+      // Generate a random state for security
+      const state = generateRandomState();
+      localStorage.setItem('oauth_state', state);
+      
+      // Construct the authorization URL
+      const authUrl = new URL(`https://${config.authDomain}/authorize`);
+      authUrl.searchParams.append('response_type', 'code');
+      authUrl.searchParams.append('client_id', config.clientId);
+      authUrl.searchParams.append('redirect_uri', config.redirectUri);
+      authUrl.searchParams.append('scope', config.scope);
+      authUrl.searchParams.append('audience', config.audience);
+      authUrl.searchParams.append('state', state);
+      authUrl.searchParams.append('prompt', 'consent'); // Force consent screen
+      
+      debugLog.log(`Auth URL: ${authUrl.toString()}`);
+      
+      // Redirect to StockX
+      window.location.href = authUrl.toString();
+    }
+    
+    // Process the OAuth callback
+    async function processCallback(code, state) {
+      debugLog.log('Processing OAuth callback');
+      updateStatus('unauthenticated', '🔄', 'Processing authentication...');
+      
+      // Verify state parameter to prevent CSRF
+      const savedState = localStorage.getItem('oauth_state');
+      if (state !== savedState) {
+        debugLog.log(`State mismatch. Expected: ${savedState}, Got: ${state}`);
+        showError('Security error: State mismatch');
+        return;
+      }
+      
+      try {
+        // Exchange the code for tokens
+        debugLog.log('Exchanging code for tokens');
+        
+        // Build the token request
+        const tokenRequest = new URLSearchParams();
+        tokenRequest.append('grant_type', 'authorization_code');
+        tokenRequest.append('client_id', config.clientId);
+        tokenRequest.append('client_secret', config.clientSecret);
+        tokenRequest.append('code', code);
+        tokenRequest.append('redirect_uri', config.redirectUri);
+        
+        // Make the API call
+        const response = await fetch(`https://${config.authDomain}/oauth/token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: tokenRequest.toString()
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Token request failed: ${response.status} - ${errorText}`);
+        }
+        
+        // Parse the response
+        const tokenData = await response.json();
+        debugLog.log('Received tokens');
+        
+        // Add some additional metadata
+        tokens = {
+          ...tokenData,
+          obtained_at: Date.now(),
+          expires_at: Date.now() + (tokenData.expires_in * 1000)
+        };
+        
+        // Store tokens
+        localStorage.setItem('stockx_tokens', JSON.stringify(tokens));
+        updateStatus('authenticated', '✅', 'Authentication successful!');
+        showRefreshAndApiSections();
+        
+        // Show token details
+        showTokenDetails();
+        
+      } catch (error) {
+        debugLog.log(`Authentication error: ${error.message}`);
+        showError(`Authentication failed: ${error.message}`);
+      }
+    }
+    
+    // Refresh the access token
+    async function refreshToken() {
+      if (!tokens || !tokens.refresh_token) {
+        showRefreshResult('error', 'No refresh token available');
+        return;
+      }
+      
+      debugLog.log('Refreshing access token');
+      
+      try {
+        // Build the refresh request
+        const refreshRequest = new URLSearchParams();
+        refreshRequest.append('grant_type', 'refresh_token');
+        refreshRequest.append('client_id', config.clientId);
+        refreshRequest.append('client_secret', config.clientSecret);
+        refreshRequest.append('refresh_token', tokens.refresh_token);
+        refreshRequest.append('audience', config.audience);
+        
+        // Make the API call
+        const response = await fetch(`https://${config.authDomain}/oauth/token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: refreshRequest.toString()
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Refresh failed: ${response.status} - ${errorText}`);
+        }
+        
+        // Parse the response
+        const refreshData = await response.json();
+        debugLog.log('Received refreshed tokens');
+        
+        // Keep the refresh token if not provided in the response
+        tokens = {
+          ...refreshData,
+          refresh_token: refreshData.refresh_token || tokens.refresh_token,
+          obtained_at: Date.now(),
+          expires_at: Date.now() + (refreshData.expires_in * 1000)
+        };
+        
+        // Store tokens
+        localStorage.setItem('stockx_tokens', JSON.stringify(tokens));
+        updateStatus('authenticated', '✅', 'Token refreshed successfully');
+        
+        // Show success
+        showRefreshResult('success', `Token refreshed successfully! Expires in ${formatTime(refreshData.expires_in)}`);
+        
+        // Show updated token details if visible
+        if (!tokenDetails.classList.contains('hidden')) {
+          showTokenDetails();
+        }
+        
+      } catch (error) {
+        debugLog.log(`Refresh error: ${error.message}`);
+        showRefreshResult('error', `Refresh failed: ${error.message}`);
+      }
+    }
+    
+    // Verify the token by making a simple API call
+    async function verifyToken() {
+      if (!tokens || !tokens.access_token) {
+        showRefreshResult('error', 'No access token available');
+        return;
+      }
+      
+      debugLog.log('Verifying access token');
+      
+      try {
+        // Make a simple API call to verify the token
+        const response = await fetch(`https://api.stockx.com/v2/catalog/search?query=test&pageSize=1`, {
+          headers: {
+            'Authorization': `Bearer ${tokens.access_token}`,
+            'x-api-key': config.apiKey
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        debugLog.log('Token verification successful');
+        
+        showRefreshResult('success', 'Token is valid and working!');
+        
+      } catch (error) {
+        debugLog.log(`Verification error: ${error.message}`);
+        
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+          showRefreshResult('error', 'Token is invalid or expired. Try refreshing it.');
+        } else {
+          showRefreshResult('error', `Verification failed: ${error.message}`);
+        }
+      }
+    }
+    
+    // Search StockX
+    async function searchStockX() {
+      if (!tokens || !tokens.access_token) {
+        showSearchResult('error', 'You need to authenticate first');
+        return;
+      }
+      
+      const query = searchQueryInput.value.trim();
+      if (!query) {
+        showSearchResult('error', 'Please enter a search query');
+        return;
+      }
+      
+      debugLog.log(`Searching for "${query}"`);
+      
+      try {
+        // Make API call
+        const response = await fetch(`https://api.stockx.com/v2/catalog/search?query=${encodeURIComponent(query)}&pageSize=5`, {
+          headers: {
+            'Authorization': `Bearer ${tokens.access_token}`,
+            'x-api-key': config.apiKey
+          }
+        });
+        
+        if (!response.ok) {
+          // If unauthorized, try refreshing the token
+          if (response.status === 401 && tokens.refresh_token) {
+            debugLog.log('Search failed with 401, trying to refresh token');
+            await refreshToken();
+            
+            // Retry with new token
+            return searchStockX();
+          }
+          
+          throw new Error(`API request failed: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        debugLog.log(`Found ${data.count} products`);
+        
+        // Show results
+        if (data.products && data.products.length > 0) {
+          let resultsHtml = `<h3>Found ${data.count} products matching "${query}"</h3><ul>`;
+          
+          data.products.forEach(product => {
+            resultsHtml += `<li><strong>${product.title || 'Unknown'}</strong> - ${product.brand || 'Unknown'}</li>`;
+          });
+          
+          resultsHtml += '</ul>';
+          showSearchResult('success', resultsHtml);
+        } else {
+          showSearchResult('info', `No products found matching "${query}"`);
+        }
+        
+      } catch (error) {
+        debugLog.log(`Search error: ${error.message}`);
+        showSearchResult('error', `Search failed: ${error.message}`);
+      }
+    }
+    
+    // Toggle token details display
+    function toggleTokenDetails() {
+      if (tokenDetails.classList.contains('hidden')) {
+        showTokenDetails();
+      } else {
+        tokenDetails.classList.add('hidden');
+        showTokenBtn.textContent = 'Show Token Details';
+      }
+    }
+    
+    // Show token details
+    function showTokenDetails() {
+      if (!tokens) {
+        tokenDetails.textContent = 'No tokens available';
+        tokenDetails.classList.remove('hidden');
+        showTokenBtn.textContent = 'Hide Token Details';
+        return;
+      }
+      
+      // Create a redacted copy for display
+      const displayTokens = {
+        ...tokens,
+        access_token: redactToken(tokens.access_token),
+        refresh_token: tokens.refresh_token ? redactToken(tokens.refresh_token) : null,
+        id_token: tokens.id_token ? redactToken(tokens.id_token) : null
+      };
+      
+      // Add human-readable times
+      if (displayTokens.obtained_at) {
+        displayTokens.obtained_at_readable = new Date(displayTokens.obtained_at).toLocaleString();
+      }
+      
+      if (displayTokens.expires_at) {
+        displayTokens.expires_at_readable = new Date(displayTokens.expires_at).toLocaleString();
+        displayTokens.expires_in_readable = formatTime((displayTokens.expires_at - Date.now()) / 1000);
+      }
+      
+      // Show the details
+      tokenDetails.textContent = JSON.stringify(displayTokens, null, 2);
+      tokenDetails.classList.remove('hidden');
+      showTokenBtn.textContent = 'Hide Token Details';
+    }
+    
+    // Clear all tokens
+    function clearTokens() {
+      debugLog.log('Clearing tokens');
+      
+      localStorage.removeItem('stockx_tokens');
+      localStorage.removeItem('oauth_state');
+      tokens = null;
+      
+      updateStatus('unauthenticated', '⚠️', 'Not authenticated with StockX');
+      refreshSection.classList.add('hidden');
+      apiSection.classList.add('hidden');
+      
+      if (!tokenDetails.classList.contains('hidden')) {
+        tokenDetails.textContent = 'No tokens available';
+      }
+      
+      refreshResult.classList.add('hidden');
+      searchResult.classList.add('hidden');
+    }
+    
+    // Show an error message
+    function showError(message) {
+      updateStatus('error', '❌', 'Authentication Error');
+      
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'result error';
+      errorDiv.textContent = message;
+      
+      // Insert after the auth actions
+      const authActions = document.getElementById('auth-actions');
+      authActions.parentNode.insertBefore(errorDiv, authActions.nextSibling);
+    }
+    
+    // Show refresh result
+    function showRefreshResult(type, message) {
+      refreshResult.className = `result ${type}`;
+      refreshResult.innerHTML = message;
+      refreshResult.classList.remove('hidden');
+    }
+    
+    // Show search result
+    function showSearchResult(type, message) {
+      searchResult.className = `result ${type}`;
+      searchResult.innerHTML = message;
+      searchResult.classList.remove('hidden');
+    }
+    
+    // Generate a random state parameter
+    function generateRandomState() {
+      return Math.random().toString(36).substring(2, 15) + 
+             Math.random().toString(36).substring(2, 15);
+    }
+    
+    // Redact token for display
+    function redactToken(token) {
+      if (!token) return null;
+      
+      const start = token.substring(0, 10);
+      const end = token.substring(token.length - 5);
+      return `${start}...${end}`;
+    }
+    
+    // Format time in a readable way
+    function formatTime(seconds) {
+      seconds = Math.floor(seconds);
+      
+      if (seconds < 60) return `${seconds} seconds`;
+      if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ${seconds % 60} seconds`;
+      
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      return `${hours} hours ${minutes} minutes`;
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

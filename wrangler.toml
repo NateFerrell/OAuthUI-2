@@ -1,6 +1,6 @@
 # Cloudflare Pages configuration
 name = "stockx-consignment-portal"
-compatibility_date = "2023-10-30"
+compatibility_date = "2024-04-10"
 workers_dev = true
 
 # Bind a KV namespace for token storage
@@ -11,35 +11,18 @@ kv_namespaces = [
 # Build settings
 [build]
 command = "npm run build"
-output_dir = "out"
 
 # Pages configuration
-pages_build_output_dir = "out"
-compatibility_date = "2024-04-10"
-
-[functions]
-directory = "functions"
+site = { bucket = "public" }
 
 # Environment variables
 [vars]
 NODE_ENV = "production"
+STOCKX_CLIENT_ID = "KlbEZjymb9OBap9a3jWlX9bIx4j4y3ks"
+STOCKX_CLIENT_SECRET = "y2GqspIoDSgzoryXS3Ue--5i0xlXQUU09F4cqnuVgn6Szk4efqZy1qGip_EVqmqe"
+REDIRECT_URI = "https://stockx-consignment-portal.pages.dev/callback"
+STOCKX_API_KEY = "OEgPz70FHNL5AxwwK8fJ92Uyk18knTDOdTBxPmi0"
 
 # Set up cron triggers for background token refresh
 [triggers]
 crons = ["*/10 * * * *"] # Run every 10 minutes
-
-# Set up routes
-[[routes]]
-pattern = "/*"
-script = "index.js"
-
-# Preview environments
-[env.preview]
-workers_dev = true
-
-# Production environment
-[env.production]
-workers_dev = false
-route = "consignment.example.com/*"
-
-

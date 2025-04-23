@@ -137,6 +137,41 @@ async function exchangeCodeForTokens(code) {
 }
 
 /**
+ * Set a provided Bearer token directly
+ * @param {string} bearerToken - The raw Bearer token string (without the "Bearer " prefix)
+ * @returns {Promise<Object>} The stored token object
+ */
+async function setDirectBearerToken(bearerToken) {
+  try {
+    if (!bearerToken || typeof bearerToken !== 'string') {
+      throw new Error('Invalid Bearer token format');
+    }
+    
+    // Remove "Bearer " prefix if present
+    const token = bearerToken.startsWith('Bearer ') ? 
+      bearerToken.substring(7) : bearerToken;
+    
+    // Create a token object with reasonable defaults
+    // Since we don't have a refresh token, this will eventually expire
+    const tokens = {
+      access_token: token,
+      refresh_token: null, // No refresh token when directly setting
+      expires_in: 43200, // Default to 12 hours
+      obtained_at: Date.now(),
+      expires_at: Date.now() + (43200 * 1000)
+    };
+    
+    await tokenStorage.set(tokens);
+    
+    console.log('Bearer token stored successfully');
+    return tokens;
+  } catch (error) {
+    console.error('Error storing direct Bearer token:', error.message);
+    throw new Error('Failed to store Bearer token');
+  }
+}
+
+/**
  * Refresh the access token using the refresh token
  * @returns {Promise<Object>} The new tokens
  */
@@ -299,5 +334,6 @@ module.exports = {
   getAccessToken,
   hasValidToken,
   getTokenStatus,
-  initBackgroundRefresh
+  initBackgroundRefresh,
+  setDirectBearerToken
 };

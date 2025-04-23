@@ -152,12 +152,33 @@ export default function Home() {
           {authStatus === 'unauthenticated' && (
             <div className={styles.centerContent}>
               <p>Server authentication is needed</p>
-              <button 
-                className={styles.authButton}
-                onClick={startServerOAuthFlow}
-              >
-                Authenticate with StockX
-              </button>
+              <div className="auth-options">
+                <button 
+                  className={styles.authButton}
+                  onClick={startServerOAuthFlow}
+                >
+                  Authenticate with StockX
+                </button>
+                <span className="or-separator">or</span>
+                <button 
+                  className={styles.directTokenButton}
+                  onClick={() => router.push('/token')}
+                >
+                  Use Existing Bearer Token
+                </button>
+              </div>
+              <style jsx>{`
+                .auth-options {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 0.75rem;
+                }
+                .or-separator {
+                  margin: 0.5rem 0;
+                  color: #666;
+                }
+              `}</style>
             </div>
           )}
           
@@ -242,6 +263,18 @@ export default function Home() {
         }
         .retryButton:hover {
           background-color: #d32f2f;
+        }
+        .directTokenButton {
+          background-color: #ff9800;
+          color: white;
+          border: none;
+          padding: 0.75rem 1.5rem;
+          font-size: 1rem;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        .directTokenButton:hover {
+          background-color: #f57c00;
         }
       `}</style>
     </div>

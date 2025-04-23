@@ -18,7 +18,7 @@ const url = require('url');
 const config = {
   clientId: 'KlbEZjymb9OBap9a3jWlX9bIx4j4y3ks',
   clientSecret: 'y2GqspIoDSgzoryXS3Ue--5i0xlXQUU09F4cqnuVgn6Szk4efqZy1qGip_EVqmqe',
-  redirectUri: 'https://cache-o-auth2-portal.vercel.app/callback',
+  redirectUri: 'https://stockx-consignment-portal.pages.dev/callback',
   useLocalServer: false, // Set to true to use local server, false to use manual redirect capture
   localPort: 3000, // Port for local server if used
   authDomain: 'accounts.stockx.com',

@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockX OAuth Hybrid Client</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    h1, h2, h3 {
+      color: #2c3e50;
+    }
+    .container {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 2rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    textarea {
+      min-height: 100px;
+    }
+    button {
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    button.secondary {
+      background-color: #6c757d;
+    }
+    button.secondary:hover {
+      background-color: #5a6268;
+    }
+    .result {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .info {
+      background-color: #cce5ff;
+      color: #004085;
+      border: 1px solid #b8daff;
+    }
+    .token-details {
+      font-family: monospace;
+      background-color: #f1f1f1;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .note {
+      background-color: #e8f4fd;
+      padding: 1rem;
+      border-left: 4px solid #0066cc;
+      margin: 1rem 0;
+    }
+    code {
+      background-color: #f1f1f1;
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    .hidden {
+      display: none;
+    }
+    .api-test {
+      margin-top: 2rem;
+      border-top: 1px solid #dee2e6;
+      padding-top: 1.5rem;
+    }
+    .card {
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      background-color: #e8f5e9;
+    }
+    .status-icon {
+      font-size: 1.5rem;
+      margin-right: 1rem;
+    }
+    .status-text {
+      flex-grow: 1;
+    }
+    .status-bar.authenticated {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+    .status-bar.unauthenticated {
+      background-color: #fff3e0;
+      color: #e65100;
+    }
+    .status-bar.error {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+    .search-results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .product-card {
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .product-image {
+      height: 200px;
+      overflow: hidden;
+    }
+    .product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .product-info {
+      padding: 1rem;
+    }
+    .product-title {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border-left-color: #0066cc;
+      animation: spin 1s linear infinite;
+      margin: 2rem auto;
+      display: block;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>StockX OAuth Hybrid Client</h1>
+  
+  <div class="container" id="main-container">
+    <div id="status-container" class="status-bar unauthenticated">
+      <div id="status-icon" class="status-icon">⚠️</div>
+      <div id="status-text" class="status-text">Not authenticated with StockX</div>
+    </div>
+    
+    <div id="token-section">
+      <h2>OAuth Token Management</h2>
+      
+      <div id="auth-actions" class="actions">
+        <button id="start-auth-flow">Authenticate with StockX</button>
+        <button id="token-details-btn" class="secondary">Show Token Details</button>
+        <button id="clear-tokens-btn" class="secondary">Clear Tokens</button>
+      </div>
+      
+      <div id="token-details" class="token-details hidden"></div>
+    </div>
+    
+    <div id="api-test" class="api-test">
+      <h2>API Testing</h2>
+      
+      <div class="form-group">
+        <label for="search-query">Search Query:</label>
+        <input type="text" id="search-query" placeholder="e.g., nike, jordan, yeezy" value="jordan">
+      </div>
+      
+      <button id="search-btn">Search StockX</button>
+      
+      <div id="search-result" class="result hidden"></div>
+      <div id="search-loading" class="hidden">
+        <div class="spinner"></div>
+      </div>
+      
+      <div id="search-results" class="search-results"></div>
+    </div>
+  </div>
+
+  <script>
+    // Debug helper function
+    function debug(message) {
+      console.log(`[DEBUG] ${message}`);
+      const debugElement = document.createElement('div');
+      debugElement.style.padding = '5px';
+      debugElement.style.margin = '5px 0';
+      debugElement.style.backgroundColor = '#f8f8f8';
+      debugElement.style.border = '1px solid #ddd';
+      debugElement.style.borderRadius = '3px';
+      debugElement.textContent = message;
+      document.body.prepend(debugElement);
+    }
+    
+    debug('StockX OAuth Hybrid Client script loaded');
+    
+    // Auto-refresh token function
+    function setupTokenRefresh() {
+      setInterval(async () => {
+        try {
+          // Get current token data
+          const tokenData = localStorage.getItem('stockx-token-data');
+          if (!tokenData) return;
+          
+          const tokens = JSON.parse(tokenData);
+          const now = Date.now();
+          
+          // If token will expire in the next 15 minutes, refresh it
+          const fifteenMinutesMs = 15 * 60 * 1000;
+          if (tokens.expires_at && now + fifteenMinutesMs >= tokens.expires_at) {
+            if (tokens.refresh_token) {
+              debug('Auto-refreshing token (expiring soon)');
+              await refreshToken(tokens.refresh_token);
+              debug('Auto-refresh completed');
+            }
+          }
+        } catch (error) {
+          console.error('Error in token auto-refresh:', error);
+          debug(`Auto-refresh error: ${error.message}`);
+        }
+      }, 5 * 60 * 1000); // Check every 5 minutes
+      
+      debug('Token auto-refresh timer started');
+    }
+    
+    // Simple direct implementation
+    function init() {
+      // Configuration
+      const config = {
+        clientId: 'KlbEZjymb9OBap9a3jWlX9bIx4j4y3ks',
+        clientSecret: 'y2GqspIoDSgzoryXS3Ue--5i0xlXQUU09F4cqnuVgn6Szk4efqZy1qGip_EVqmqe',
+        redirectUri: 'https://stockx-consignment-portal.pages.dev/hybrid-client',
+        authDomain: 'accounts.stockx.com',
+        audience: 'gateway.stockx.com',
+        scope: 'offline_access openid',
+        apiKey: 'OEgPz70FHNL5AxwwK8fJ92Uyk18knTDOdTBxPmi0'
+      };
+      
+      // Elements
+      const statusContainer = document.getElementById('status-container');
+      const statusIcon = document.getElementById('status-icon');
+      const statusText = document.getElementById('status-text');
+      const startAuthFlowBtn = document.getElementById('start-auth-flow');
+      const tokenDetailsBtn = document.getElementById('token-details-btn');
+      const clearTokensBtn = document.getElementById('clear-tokens-btn');
+      const tokenDetailsDiv = document.getElementById('token-details');
+      const searchQueryInput = document.getElementById('search-query');
+      const searchBtn = document.getElementById('search-btn');
+      const searchResultDiv = document.getElementById('search-result');
+      const searchLoadingDiv = document.getElementById('search-loading');
+      const searchResultsDiv = document.getElementById('search-results');
+      
+      // Check for tokens on load and process OAuth callback if present
+      try {
+        debug('Checking token status');
+        checkTokenStatus();
+        debug('Processing OAuth callback');
+        processOAuthCallback();
+        debug('Setting up token auto-refresh');
+        setupTokenRefresh();
+      } catch (error) {
+        debug(`Error during initialization: ${error.message}`);
+      }
+      
+      // Event listeners with debugging
+      debug('Adding click event listeners to buttons');
+      
+      startAuthFlowBtn.onclick = function() {
+        debug('Start Auth Flow button clicked');
+        startAuthFlow();
+      };
+      
+      tokenDetailsBtn.onclick = function() {
+        debug('Token Details button clicked');
+        toggleTokenDetails();
+      };
+      
+      clearTokensBtn.onclick = function() {
+        debug('Clear Tokens button clicked');
+        clearTokens();
+      };
+      
+      searchBtn.onclick = function() {
+        debug('Search button clicked');
+        searchStockX();
+      };
+      
+      // Handle OAuth callback
+      function processOAuthCallback() {
+        // Check if we have a code in the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        
+        if (code) {
+          // Remove code from URL without reloading the page
+          const url = new URL(window.location);
+          url.searchParams.delete('code');
+          url.searchParams.delete('state');
+          window.history.replaceState({}, document.title, url);
+          
+          // Exchange code for tokens
+          exchangeCodeForTokens(code, state);
+        }
+      }
+      
+      // Check token status
+      function checkTokenStatus() {
+        // Get tokens from localStorage
+        const tokenData = localStorage.getItem('stockx-token-data');
+        
+        if (!tokenData) {
+          updateStatus('unauthenticated', '⚠️', 'Not authenticated with StockX');
+          return false;
+        }
+        
+        try {
+          const tokens = JSON.parse(tokenData);
+          const now = Date.now();
+          
+          // Check if token is expired
+          if (tokens.expires_at && now >= tokens.expires_at) {
+            // Try to refresh if we have a refresh token
+            if (tokens.refresh_token) {
+              updateStatus('unauthenticated', '🔄', 'Token expired, attempting to refresh...');
+              refreshToken(tokens.refresh_token);
+              return false;
+            } else {
+              updateStatus('unauthenticated', '⚠️', 'Token expired and no refresh token available');
+              return false;
+            }
+          }
+          
+          // Token is valid
+          const expiresIn = Math.floor((tokens.expires_at - now) / 1000 / 60); // minutes
+          updateStatus('authenticated', '✅', `Authenticated with StockX (expires in ${expiresIn} minutes)`);
+          return true;
+        } catch (error) {
+          console.error('Error checking token status:', error);
+          updateStatus('error', '❌', 'Error checking token status');
+          return false;
+        }
+      }
+      
+      // Update status display
+      function updateStatus(status, icon, text) {
+        statusContainer.className = `status-bar ${status}`;
+        statusIcon.textContent = icon;
+        statusText.textContent = text;
+      }
+      
+      // Start OAuth flow - Use callback.html for direct client-side handling
+      function startAuthFlow() {
+        // Generate state parameter for security
+        const state = makeRandomState();
+        localStorage.setItem('oauth-state', state);
+        
+        // Build authorization URL with direct callback.html redirect
+        const authUrl = new URL(`https://${config.authDomain}/authorize`);
+        authUrl.searchParams.append('response_type', 'code');
+        authUrl.searchParams.append('client_id', config.clientId);
+        authUrl.searchParams.append('redirect_uri', window.location.origin + '/callback.html');
+        authUrl.searchParams.append('scope', 'offline_access openid email');
+        authUrl.searchParams.append('audience', 'gateway.stockx.com');
+        authUrl.searchParams.append('state', state);
+        authUrl.searchParams.append('prompt', 'consent');
+        
+        debug('Auth URL (direct callback.html): ' + authUrl.toString());
+        // Redirect to authorization URL
+        window.location.href = authUrl.toString();
+      }
+      
+      // Exchange code for tokens
+      async function exchangeCodeForTokens(code, state) {
+        updateStatus('unauthenticated', '🔄', 'Exchanging code for tokens...');
+        
+        try {
+          // Verify state
+          const savedState = localStorage.getItem('oauth-state');
+          if (state !== savedState) {
+            throw new Error('State mismatch. This could be a security issue.');
+          }
+          
+          // Build the request body
+          const body = new URLSearchParams();
+          body.append('grant_type', 'authorization_code');
+          body.append('client_id', config.clientId);
+          body.append('client_secret', config.clientSecret);
+          body.append('code', code);
+          body.append('redirect_uri', config.redirectUri);
+          
+          // Make the request
+          const response = await fetch(`https://${config.authDomain}/oauth/token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: body.toString()
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(`Token request failed: ${response.status} ${response.statusText} - ${errorData}`);
+          }
+          
+          const tokens = await response.json();
+          
+          // Add timestamp info
+          tokens.obtained_at = Date.now();
+          tokens.expires_at = Date.now() + (tokens.expires_in * 1000);
+          
+          // Store tokens
+          storeTokens(tokens);
+          
+          // Update status
+          updateStatus('authenticated', '✅', 'Successfully authenticated with StockX');
+          
+        } catch (error) {
+          console.error('Error exchanging code for tokens:', error);
+          updateStatus('error', '❌', `Authentication failed: ${error.message}`);
+        }
+      }
+      
+      // Refresh token
+      async function refreshToken(refreshToken) {
+        try {
+          // Build the request body
+          const body = new URLSearchParams();
+          body.append('grant_type', 'refresh_token');
+          body.append('client_id', config.clientId);
+          body.append('client_secret', config.clientSecret);
+          body.append('refresh_token', refreshToken);
+          
+          // Make the request
+          const response = await fetch(`https://${config.authDomain}/oauth/token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: body.toString()
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(`Token refresh failed: ${response.status} ${response.statusText} - ${errorData}`);
+          }
+          
+          const tokens = await response.json();
+          
+          // Add timestamp info
+          tokens.obtained_at = Date.now();
+          tokens.expires_at = Date.now() + (tokens.expires_in * 1000);
+          
+          // If no new refresh token, keep the old one
+          if (!tokens.refresh_token) {
+            tokens.refresh_token = refreshToken;
+          }
+          
+          // Store tokens
+          storeTokens(tokens);
+          
+          // Update status
+          updateStatus('authenticated', '✅', 'Token refreshed successfully');
+          
+          return tokens;
+        } catch (error) {
+          console.error('Error refreshing token:', error);
+          updateStatus('error', '❌', `Token refresh failed: ${error.message}`);
+          return null;
+        }
+      }
+      
+      // Store tokens
+      function storeTokens(tokens) {
+        localStorage.setItem('stockx-token', tokens.access_token);
+        localStorage.setItem('stockx-token-data', JSON.stringify(tokens));
+        if (tokens.refresh_token) {
+          localStorage.setItem('stockx-refresh-token', tokens.refresh_token);
+        }
+      }
+      
+      // Toggle token details
+      function toggleTokenDetails() {
+        if (tokenDetailsDiv.classList.contains('hidden')) {
+          // Show token details
+          const tokenData = localStorage.getItem('stockx-token-data');
+          if (tokenData) {
+            try {
+              const tokens = JSON.parse(tokenData);
+              // Show redacted version for security
+              const redactedTokens = {
+                ...tokens,
+                access_token: redactToken(tokens.access_token),
+                refresh_token: tokens.refresh_token ? redactToken(tokens.refresh_token) : null,
+                id_token: tokens.id_token ? redactToken(tokens.id_token) : null
+              };
+              tokenDetailsDiv.textContent = JSON.stringify(redactedTokens, null, 2);
+              tokenDetailsDiv.classList.remove('hidden');
+              tokenDetailsBtn.textContent = 'Hide Token Details';
+            } catch (error) {
+              console.error('Error parsing token data:', error);
+              tokenDetailsDiv.textContent = 'Error displaying token details';
+              tokenDetailsDiv.classList.remove('hidden');
+            }
+          } else {
+            tokenDetailsDiv.textContent = 'No token data available';
+            tokenDetailsDiv.classList.remove('hidden');
+          }
+        } else {
+          // Hide token details
+          tokenDetailsDiv.classList.add('hidden');
+          tokenDetailsBtn.textContent = 'Show Token Details';
+        }
+      }
+      
+      // Clear tokens
+      function clearTokens() {
+        if (confirm('Are you sure you want to clear all token data? You will need to re-authenticate.')) {
+          localStorage.removeItem('stockx-token');
+          localStorage.removeItem('stockx-token-data');
+          localStorage.removeItem('stockx-refresh-token');
+          localStorage.removeItem('oauth-state');
+          
+          updateStatus('unauthenticated', '⚠️', 'Not authenticated with StockX');
+          
+          if (!tokenDetailsDiv.classList.contains('hidden')) {
+            tokenDetailsDiv.classList.add('hidden');
+            tokenDetailsBtn.textContent = 'Show Token Details';
+          }
+          
+          // Clear search results
+          searchResultsDiv.innerHTML = '';
+          if (!searchResultDiv.classList.contains('hidden')) {
+            searchResultDiv.classList.add('hidden');
+          }
+        }
+      }
+      
+      // Search StockX
+      async function searchStockX() {
+        const query = searchQueryInput.value.trim();
+        
+        if (!query) {
+          showSearchResult('Please enter a search query', 'error');
+          return;
+        }
+        
+        // Check if we have a valid token
+        if (!checkTokenStatus()) {
+          showSearchResult('You need to authenticate first', 'error');
+          return;
+        }
+        
+        try {
+          // Show loading
+          searchLoadingDiv.classList.remove('hidden');
+          if (!searchResultDiv.classList.contains('hidden')) {
+            searchResultDiv.classList.add('hidden');
+          }
+          searchResultsDiv.innerHTML = '';
+          
+          // Get token
+          const token = localStorage.getItem('stockx-token');
+          
+          // Make API request
+          const response = await fetch(`https://api.stockx.com/v2/catalog/search?query=${encodeURIComponent(query)}&pageSize=12`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'x-api-key': config.apiKey
+            }
+          });
+          
+          if (!response.ok) {
+            if (response.status === 401) {
+              // Token expired, try to refresh
+              const tokenData = JSON.parse(localStorage.getItem('stockx-token-data'));
+              if (tokenData && tokenData.refresh_token) {
+                const newTokens = await refreshToken(tokenData.refresh_token);
+                if (newTokens) {
+                  // Try search again with new token
+                  return searchStockX();
+                }
+              }
+              throw new Error('Authentication failed. Please re-authenticate.');
+            }
+            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+          }
+          
+          const data = await response.json();
+          
+          // Show results
+          showSearchResult(`Found ${data.count} products matching "${query}"`, 'success');
+          
+          // Display products
+          if (data.products && data.products.length > 0) {
+            displayProducts(data.products);
+          } else {
+            searchResultsDiv.innerHTML = '<p>No products found matching your search.</p>';
+          }
+        } catch (error) {
+          console.error('Error searching StockX:', error);
+          showSearchResult(`Error searching StockX: ${error.message}`, 'error');
+        } finally {
+          // Hide loading
+          searchLoadingDiv.classList.add('hidden');
+        }
+      }
+      
+      // Show search result
+      function showSearchResult(message, type) {
+        searchResultDiv.textContent = message;
+        searchResultDiv.className = `result ${type}`;
+        searchResultDiv.classList.remove('hidden');
+      }
+      
+      // Display products
+      function displayProducts(products) {
+        searchResultsDiv.innerHTML = '';
+        
+        products.forEach(product => {
+          const card = document.createElement('div');
+          card.className = 'product-card';
+          
+          const image = product.productAttributes?.image || 'https://stockx.com/images/noproduct.svg';
+          const title = product.title || 'Unknown Product';
+          const styleId = product.styleId || 'N/A';
+          const brand = product.brand || 'Unknown Brand';
+          const retailPrice = product.retailPrice ? `$${product.retailPrice}` : 'N/A';
+          
+          card.innerHTML = `
+            <div class="product-image">
+              <img src="${image}" alt="${title}" loading="lazy">
+            </div>
+            <div class="product-info">
+              <div class="product-title">${title}</div>
+              <div>Style: ${styleId}</div>
+              <div>Brand: ${brand}</div>
+              <div>Retail: ${retailPrice}</div>
+            </div>
+          `;
+          
+          searchResultsDiv.appendChild(card);
+        });
+      }
+      
+      // Utility functions
+      function generateRandomState() {
+        return Math.random().toString(36).substring(2, 15) + 
+               Math.random().toString(36).substring(2, 15);
+      }
+      
+      function redactToken(token) {
+        if (!token) return null;
+        return token.substring(0, 10) + '...' + token.substring(token.length - 5);
+      }
+    }
+    
+    // Test Refresh Token function
+    // Function to directly call refresh endpoint with token
+    async function manualRefreshToken() {
+      // Get current tokens
+      const tokenData = localStorage.getItem('stockx-token-data');
+      if (!tokenData) {
+        debug('No token data found in localStorage');
+        return;
+      }
+      
+      const tokens = JSON.parse(tokenData);
+      debug('Current token info: ' + JSON.stringify({
+        has_access_token: !!tokens.access_token,
+        has_refresh_token: !!tokens.refresh_token,
+        expires_in: tokens.expires_at ? Math.floor((tokens.expires_at - Date.now())/1000) + ' seconds' : 'N/A'
+      }));
+      
+      // If no refresh token, show error
+      if (!tokens.refresh_token) {
+        debug('ERROR: No refresh token available');
+        return;
+      }
+      
+      try {
+        // Manually trigger a refresh using the exact API endpoint 
+        debug('Manually calling OAuth token endpoint with refresh_token grant...');
+        
+        // Build the request body according to StockX docs
+        const body = new URLSearchParams();
+        body.append('grant_type', 'refresh_token');
+        body.append('client_id', 'KlbEZjymb9OBap9a3jWlX9bIx4j4y3ks');
+        body.append('client_secret', 'y2GqspIoDSgzoryXS3Ue--5i0xlXQUU09F4cqnuVgn6Szk4efqZy1qGip_EVqmqe');
+        body.append('audience', 'gateway.stockx.com');
+        body.append('refresh_token', tokens.refresh_token);
+        
+        debug('Calling https://accounts.stockx.com/oauth/token with refresh token...');
+        
+        // Make the token refresh request
+        const response = await fetch('https://accounts.stockx.com/oauth/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: body.toString()
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Refresh failed: ${response.status} - ${errorText}`);
+        }
+        
+        // Process the response
+        const refreshData = await response.json();
+        debug('Refresh response: ' + JSON.stringify(refreshData));
+        
+        // Add timestamp info
+        const newTokens = {
+          ...refreshData,
+          obtained_at: Date.now(),
+          expires_at: Date.now() + ((refreshData.expires_in || 43200) * 1000)
+        };
+        
+        // Store the updated tokens
+        localStorage.setItem('stockx-token', newTokens.access_token);
+        localStorage.setItem('stockx-token-data', JSON.stringify(newTokens));
+        
+        debug('Refresh successful! New token expires in: ' + 
+              Math.floor((newTokens.expires_at - Date.now())/1000) + ' seconds');
+        
+        return newTokens;
+      } catch (error) {
+        debug('Refresh failed: ' + error.message);
+        return null;
+      }
+    }
+    
+    // Add a test button to the UI
+    function addTestButton() {
+      const testBtn = document.createElement('button');
+      testBtn.textContent = 'Test Refresh Token';
+      testBtn.style.backgroundColor = '#ff9800';
+      testBtn.onclick = manualRefreshToken;
+      
+      const authActions = document.getElementById('auth-actions');
+      if (authActions) {
+        authActions.appendChild(testBtn);
+        debug('Added test refresh button');
+      }
+    }
+    
+    // Simple random state generator for auth
+    function makeRandomState() {
+      return Math.random().toString(36).substring(2, 15) + 
+             Math.random().toString(36).substring(2, 15);
+    }
+    
+    // Function to check token status from server by direct probe
+    async function checkServerTokenStatus() {
+      debug('Checking server token status using direct API test...');
+      
+      // Create a status display panel
+      let statusDiv = document.createElement('div');
+      statusDiv.style.padding = '10px';
+      statusDiv.style.margin = '10px 0';
+      statusDiv.style.borderRadius = '4px';
+      statusDiv.style.backgroundColor = '#cce5ff';
+      statusDiv.style.color = '#004085';
+      statusDiv.style.border = '1px solid #b8daff';
+      statusDiv.innerHTML = `
+        <h3>Testing server API integration...</h3>
+        <p>Making test request to StockX API via server proxy...</p>
+      `;
+      document.body.insertBefore(statusDiv, document.body.firstChild);
+      
+      try {
+        // Try to call a simple StockX API endpoint through the server proxy
+        const response = await fetch('https://stockx-consignment-portal.pages.dev/api/stockx/v2/catalog/search?query=test&pageSize=1', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        // Basic logging of response
+        const responseStatus = response.status;
+        debug(`API proxy response status: ${responseStatus}`);
+        
+        try {
+          // Try to parse the response
+          const responseText = await response.text();
+          debug(`API response (first 100 chars): ${responseText.substring(0, 100)}...`);
+          
+          try {
+            const responseData = JSON.parse(responseText);
+            
+            // If we got here, API proxy is working with authentication!
+            statusDiv.style.backgroundColor = '#d4edda';
+            statusDiv.style.color = '#155724';
+            statusDiv.style.border = '1px solid #c3e6cb';
+            statusDiv.innerHTML = `
+              <h3>✅ Server Auth is Working!</h3>
+              <p>Successfully made authenticated request to StockX API</p>
+              <p>Found ${responseData.count || 0} products matching search query</p>
+              <p>Your server is properly authenticated and has a valid token!</p>
+            `;
+            
+            return {
+              has_token: true,
+              is_valid: true,
+              server_status: 'authenticated',
+              products_returned: responseData.count || 0
+            };
+          } catch (jsonError) {
+            // Not JSON response
+            if (responseText.includes('Authentication') || responseText.includes('auth')) {
+              statusDiv.style.backgroundColor = '#fff3cd';
+              statusDiv.style.color = '#856404';
+              statusDiv.style.border = '1px solid #ffeeba';
+              statusDiv.innerHTML = `
+                <h3>⚠️ Server Needs Authentication</h3>
+                <p>Server responded with authentication issue</p>
+                <p>Please use the Server Auth button to authenticate</p>
+              `;
+            } else {
+              statusDiv.style.backgroundColor = '#f8d7da';
+              statusDiv.style.color = '#721c24';
+              statusDiv.style.border = '1px solid #f5c6cb';
+              statusDiv.innerHTML = `
+                <h3>❌ API Issue</h3>
+                <p>Server responded but with unexpected content:</p>
+                <pre style="max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 8px; font-size: 12px;">
+                  ${responseText.substring(0, 500)}...
+                </pre>
+              `;
+            }
+            
+            return {
+              has_token: false,
+              is_valid: false,
+              server_status: 'error',
+              error: jsonError.message
+            };
+          }
+        } catch (textError) {
+          debug(`Error reading response: ${textError.message}`);
+          
+          // Show error in status display
+          statusDiv.style.backgroundColor = '#f8d7da';
+          statusDiv.style.color = '#721c24';
+          statusDiv.style.border = '1px solid #f5c6cb';
+          statusDiv.innerHTML = `
+            <h3>❌ Error Reading Response</h3>
+            <p>Could not read API response: ${textError.message}</p>
+          `;
+          
+          return {
+            has_token: false,
+            is_valid: false,
+            server_status: 'error',
+            error: textError.message
+          };
+        }
+      } catch (error) {
+        debug('Error checking server token status: ' + error.message);
+        
+        // Show error in status display
+        statusDiv.style.backgroundColor = '#f8d7da';
+        statusDiv.style.color = '#721c24';
+        statusDiv.style.border = '1px solid #f5c6cb';
+        statusDiv.innerHTML = `
+          <h3>❌ Server Connection Error</h3>
+          <p>Could not connect to server API: ${error.message}</p>
+          <p>The server might be down or the API endpoints not configured.</p>
+        `;
+        
+        return {
+          has_token: false,
+          is_valid: false,
+          server_status: 'error',
+          error: error.message
+        };
+      }
+    }
+    
+    // Helper function to format time in human-readable form
+    function formatTimespan(seconds) {
+      if (!seconds) return 'Unknown';
+      
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const remainingSeconds = seconds % 60;
+      
+      const parts = [];
+      if (hours > 0) parts.push(`${hours}h`);
+      if (minutes > 0) parts.push(`${minutes}m`);
+      parts.push(`${remainingSeconds}s`);
+      
+      return parts.join(' ');
+    }
+    
+    // Create a direct test function that uses the modified auth parameters
+    function directAuthWithRefreshToken() {
+      debug('Using enhanced auth flow for refresh token');
+      const state = makeRandomState();
+      localStorage.setItem('oauth-state', state);
+      
+      const authUrl = new URL(`https://accounts.stockx.com/authorize`);
+      authUrl.searchParams.append('response_type', 'code');
+      authUrl.searchParams.append('client_id', 'KlbEZjymb9OBap9a3jWlX9bIx4j4y3ks');
+      authUrl.searchParams.append('redirect_uri', 'https://stockx-consignment-portal.pages.dev/callback'); // SERVER ENDPOINT
+      authUrl.searchParams.append('scope', 'offline_access openid email');
+      authUrl.searchParams.append('audience', 'gateway.stockx.com');
+      authUrl.searchParams.append('state', state);
+      authUrl.searchParams.append('prompt', 'consent');
+      
+      debug('Auth URL (will redirect to server callback): ' + authUrl.toString());
+      window.location.href = authUrl.toString();
+    }
+    
+    // Add button for direct auth with refresh token
+    function updateAuthFlow() {
+      debug('Adding direct auth button for refresh token');
+      
+      const directAuthBtn = document.createElement('button');
+      directAuthBtn.textContent = 'Server Auth (Get Refresh Token)';
+      directAuthBtn.style.backgroundColor = '#4CAF50';
+      directAuthBtn.style.color = 'white';
+      directAuthBtn.onclick = directAuthWithRefreshToken;
+      
+      const checkStatusBtn = document.createElement('button');
+      checkStatusBtn.textContent = 'Check Server Token Status';
+      checkStatusBtn.style.backgroundColor = '#2196F3';
+      checkStatusBtn.style.color = 'white';
+      checkStatusBtn.onclick = checkServerTokenStatus;
+      
+      const authActions = document.getElementById('auth-actions');
+      if (authActions) {
+        authActions.insertBefore(directAuthBtn, authActions.firstChild);
+        authActions.insertBefore(checkStatusBtn, authActions.firstChild);
+        debug('Added server auth and status check buttons');
+      }
+    }
+    
+    // Initialize when page is loaded
+    window.onload = function() {
+      debug('Window loaded, initializing app');
+      init();
+      
+      // Add testing functionality after initialization
+      setTimeout(() => {
+        debug('Setting up token refresh testing...');
+        updateAuthFlow();
+        addTestButton();
+        
+        // Check server token status on load
+        checkServerTokenStatus();
+      }, 1000);
+    };
+  </script>
+</body>
+</html>

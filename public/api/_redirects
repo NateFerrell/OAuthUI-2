@@ -1,0 +1,3 @@
+/api/auth/*  /.netlify/functions/auth/:splat  200
+/api/stockx/*  /.netlify/functions/stockx/:splat  200
+/callback  /.netlify/functions/callback  200
