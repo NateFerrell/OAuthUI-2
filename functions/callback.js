@@ -1,11 +1,66 @@
 /**
  * Handler for the OAuth callback page
+ * Supports both HTML and JSON responses based on Accept header
  */
 
 export async function onRequest(context) {
   const { request, env } = context;
   
-  // Serve the callback HTML page
+  // Handle both approaches for determining JSON response
+  // 1. Check Accept header
+  const acceptHeader = request.headers.get('Accept') || '';
+  // 2. Check query parameter (for CLI tools that might not set Accept header)
+  const url = new URL(request.url);
+  const formatParam = url.searchParams.get('format');
+  
+  // Request JSON if either indicator is present
+  const wantsJson = acceptHeader.includes('application/json') || formatParam === 'json';
+  
+  // Extract code and state from URL
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
+  const error = url.searchParams.get('error');
+  
+  // Check for JSON request (likely from CLI)
+  if (wantsJson) {
+    console.log('JSON response requested');
+    console.log('Request URL:', request.url);
+    console.log('Code:', code);
+    console.log('State:', state);
+    
+    if (error) {
+      return new Response(JSON.stringify({
+        error: error,
+        error_description: url.searchParams.get('error_description'),
+        success: false
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    if (!code) {
+      return new Response(JSON.stringify({
+        error: 'No authorization code provided',
+        success: false
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Return the code and state for direct use
+    return new Response(JSON.stringify({
+      code: code,
+      state: state,
+      success: true
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+  
+  // For browser requests, serve the HTML page
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -92,6 +147,15 @@ export async function onRequest(context) {
       border-left: 4px solid #e53935;
       color: #e53935;
     }
+    
+    pre {
+      background-color: #f5f5f7;
+      padding: 15px;
+      border-radius: 4px;
+      text-align: left;
+      overflow: auto;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -110,6 +174,10 @@ export async function onRequest(context) {
         <p>Your authentication tokens have been securely stored.</p>
         <p>They will be automatically refreshed before they expire.</p>
       </div>
+      <div id="cliCodeBlock" style="margin-top: 20px; display: none;">
+        <p><strong>For CLI users:</strong> Copy the authorization code below:</p>
+        <pre id="authCode"></pre>
+      </div>
       <a href="/" class="button">Return to Main Page</a>
     </div>
     
@@ -123,68 +191,91 @@ export async function onRequest(context) {
   </div>
   
   <script>
-    // Get the code and state from URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    const state = urlParams.get('state');
-    const error = urlParams.get('error');
-    const errorDescription = urlParams.get('error_description');
-    
-    // Handle the authentication process
-    async function handleAuthentication() {
-      // Check for errors in the URL
-      if (error) {
-        showError(\`\${error}: \${errorDescription || 'No description provided'}\`);
-        return;
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get the code and state from URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+      const error = urlParams.get('error');
+      const errorDescription = urlParams.get('error_description');
+      const isCli = urlParams.get('cli') === 'true';
+      
+      // Show success message
+      function showSuccess() {
+        document.getElementById('processing').style.display = 'none';
+        document.getElementById('success').style.display = 'block';
+        document.getElementById('error').style.display = 'none';
       }
       
-      // Check if code is present
-      if (!code) {
-        showError('No authorization code received');
-        return;
+      // Show error message
+      function showError(message) {
+        document.getElementById('processing').style.display = 'none';
+        document.getElementById('success').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('errorMessage').textContent = message;
       }
       
-      // Exchange code for tokens
-      try {
-        const response = await fetch('/api/auth/callback', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ code, state }),
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to complete authentication');
+      // Handle the authentication process
+      async function handleAuthentication() {
+        // Check for errors in the URL
+        if (error) {
+          showError(error + ': ' + (errorDescription || 'No description provided'));
+          return;
         }
         
-        // Show success message
-        showSuccess();
-      } catch (error) {
-        console.error('Authentication error:', error);
-        showError(error.message);
+        // Check if code is present
+        if (!code) {
+          showError('No authorization code received');
+          return;
+        }
+        
+        // If this is CLI mode, show the code directly
+        if (isCli) {
+          document.getElementById('cliCodeBlock').style.display = 'block';
+          document.getElementById('authCode').textContent = code;
+          showSuccess();
+          return;
+        }
+        
+        // Exchange code for tokens
+        try {
+          const response = await fetch('/api/auth/callback', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ code, state }),
+          });
+          
+          let data;
+          try {
+            data = await response.json();
+          } catch (e) {
+            // If response is not JSON, try to get text
+            const text = await response.text();
+            if (!response.ok) {
+              throw new Error(text || 'Failed to complete authentication');
+            }
+            // If we got here, show success
+            showSuccess();
+            return;
+          }
+          
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to complete authentication');
+          }
+          
+          // Show success message
+          showSuccess();
+        } catch (error) {
+          console.error('Authentication error:', error);
+          showError(error.message);
+        }
       }
-    }
-    
-    // Show success message
-    function showSuccess() {
-      document.getElementById('processing').style.display = 'none';
-      document.getElementById('success').style.display = 'block';
-      document.getElementById('error').style.display = 'none';
-    }
-    
-    // Show error message
-    function showError(message) {
-      document.getElementById('processing').style.display = 'none';
-      document.getElementById('success').style.display = 'none';
-      document.getElementById('error').style.display = 'block';
-      document.getElementById('errorMessage').textContent = message;
-    }
-    
-    // Start the authentication process
-    document.addEventListener('DOMContentLoaded', handleAuthentication);
+      
+      // Start the authentication process
+      handleAuthentication();
+    });
   </script>
 </body>
 </html>`;

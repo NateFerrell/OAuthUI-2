@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  oauth-server:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - STOCKX_CLIENT_ID=KlbEZjymb9OBap9a3jWlX9bIx4j4y3ks
+      - STOCKX_CLIENT_SECRET=y2GqspIoDSgzoryXS3Ue--5i0xlXQUU09F4cqnuVgn6Szk4efqZy1qGip_EVqmqe
+      - REDIRECT_URI=http://YOUR_DIGITAL_OCEAN_IP:3000/callback
+    volumes:
+      - tokens:/app/tokens
+    restart: unless-stopped
+
+volumes:
+  tokens:
